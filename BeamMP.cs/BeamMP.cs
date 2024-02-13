@@ -11,122 +11,131 @@ using Newtonsoft.Json.Linq;
 
 namespace WindowsGSM.Plugins
 {
-    public class NewPlugin
+    public class BeamMP
     {
         // - Plugin Details
         public Plugin Plugin = new Plugin
         {
-            name = "WindowsGSM.NewPlugin", // WindowsGSM.XXXX
-            author = "Your name",
-            description = "description",
+            name = "WindowsGSM.BeamMP",
+            author = "YoruDev-Ryland",
+            description = "WindowsGSM plugin for supporting BeamMP Server",
             version = "1.0",
-            url = "https://github.com/BattlefieldDuck", // Github repository link (Best practice)
-            color = "#ffffff" // Color Hex
+            url = "https://github.com/YoruDev-Ryland/WindowsGSM.BeamMP",
+            color = "#ffffff"
         };
 
 
         // - Standard Constructor and properties
-        public NewPlugin(ServerConfig serverData) => _serverData = serverData;
+        public BeamMP(ServerConfig serverData) => _serverData = serverData;
         private readonly ServerConfig _serverData;
         public string Error, Notice;
 
 
         // - Game server Fixed variables
-        public string StartPath => "paper.jar"; // Game server start path
-        public string FullName = "Minecraft: Paper Server"; // Game server FullName
+        public string StartPath => "BeamMP-Server.exe"; // Game server start path
+        public string FullName = "BeamMP Server"; // Game server FullName
         public bool AllowsEmbedConsole = true;  // Does this server support output redirect?
         public int PortIncrements = 1; // This tells WindowsGSM how many ports should skip after installation
         public object QueryMethod = new UT3(); // Query method should be use on current server type. Accepted value: null or new A2S() or new FIVEM() or new UT3()
 
 
         // - Game server default values
-        public string Port = "25565"; // Default port
-        public string QueryPort = "25565"; // Default query port
-        public string Defaultmap = "world"; // Default map name
-        public string Maxplayers = "20"; // Default maxplayers
+        public string Port = "30814"; // Default port
+        public string QueryPort = "30814"; // Default query port
+        public string Defaultmap = "/levels/west_coast_usa/info.json"; // Default map name
+        public string Maxplayers = "12"; // Default maxplayers
         public string Additional = ""; // Additional server start parameter
 
 
         // - Create a default cfg for the game server after installation
         public async void CreateServerCFG()
         {
+            var configPath = ServerPath.GetServersServerFiles(_serverData.ServerID, "ServerConfig.toml");
             var sb = new StringBuilder();
-            sb.AppendLine($"motd={_serverData.ServerName}");
-            sb.AppendLine($"server-port={_serverData.ServerPort}");
-            sb.AppendLine("enable-query=true");
-            sb.AppendLine($"query.port={_serverData.ServerQueryPort}");
-            sb.AppendLine($"rcon.port={int.Parse(_serverData.ServerPort) + 10}");
-            sb.AppendLine($"rcon.password={ _serverData.GetRCONPassword()}");
-            File.WriteAllText(ServerPath.GetServersServerFiles(_serverData.ServerID, "server.properties"), sb.ToString());
+            sb.AppendLine("# This is the BeamMP-Server config file.");
+            sb.AppendLine("# Help & Documentation: `https://wiki.beammp.com/en/home/server-maintenance`");
+            sb.AppendLine("# IMPORTANT: Fill in the AuthKey with the key you got from `https://keymaster.beammp.com/` on the left under \"Keys\"");
+            sb.AppendLine("");
+            sb.AppendLine("[General]");
+            sb.AppendLine($"Name = \"{_serverData.ServerName}\" # DO NOT UPDATE FROM HERE. This is updated on server start from WindowsGSM => Config => Server Name page.");
+            sb.AppendLine($"Port = {_serverData.ServerPort} # DO NOT UPDATE FROM HERE. This is updated on server start from WindowsGSM => Config => Server Port page.");
+            sb.AppendLine("# AuthKey has to be filled out in order to run the server");
+            sb.AppendLine($"AuthKey = \"{_serverData.ServerGSLT}\" # DO NOT UPDATE FROM HERE. This is updated on server start from WindowsGSM => Config => Server GSLT page.");
+            sb.AppendLine("# Whether to log chat messages in the console / log");
+            sb.AppendLine($"LogChat = true");
+            sb.AppendLine("# Add custom identifying tags to your server to make it easier to find. Format should be TagA,TagB,TagC. Note the comma seperation.");
+            sb.AppendLine($"Tags = \"Freeroam\"");
+            sb.AppendLine($"Debug = false");
+            sb.AppendLine($"Private = true");
+            sb.AppendLine($"MaxCars = 1");
+            sb.AppendLine($"MaxPlayers = {_serverData.ServerMaxPlayer} # DO NOT UPDATE FROM HERE. This is updated on server start from WindowsGSM => Config => Server Maxplayer page.");
+            sb.AppendLine($"Map = \"{_serverData.ServerMap}\" # DO NOT UPDATE FROM HERE. This is updated on server start from WindowsGSM => Config => Server Start Map page.");
+            sb.AppendLine($"Description = \"WindowsGSM BeamMP Server\"");
+            sb.AppendLine($"ResourceFolder = \"Resources\"");
+            sb.AppendLine("");
+            sb.AppendLine("[Misc]");
+            sb.AppendLine("# Hides the periodic update message which notifies you of a new server version. You should really keep this on and always update as soon as possible. For more information visit https://wiki.beammp.com/en/home/server-maintenance#updating-the-server. An update message will always appear at startup regardless.");
+            sb.AppendLine("ImScaredOfUpdates = false");
+            sb.AppendLine("# If SendErrors is `true`, the server will send helpful info about crashes and other issues back to the BeamMP developers. This info may include your config, who is on your server at the time of the error, and similar general information. This kind of data is vital in helping us diagnose and fix issues faster. This has no impact on server performance. You can opt-out of this system by setting this to `false`");
+            sb.AppendLine("SendErrorsShowMessage = true");
+            sb.AppendLine("# You can turn on/off the SendErrors message you get on startup here");
+            sb.AppendLine("SendErrors = true");
+            File.WriteAllText(configPath, sb.ToString());
+        }
+
+
+        public void UpdateServerCFG()
+        {
+            var configPath = ServerPath.GetServersServerFiles(_serverData.ServerID, "ServerConfig.toml");
+
+            // Read the existing content of the config file
+            var configContent = File.ReadAllText(configPath);
+
+            // Update the values directly by replacing the lines.
+            configContent = Regex.Replace(configContent, @"(?<=Name = "").*?(?="")", _serverData.ServerName);
+            configContent = Regex.Replace(configContent, @"(?<=Port = ).*?(?=\n)", _serverData.ServerPort.ToString());
+            configContent = Regex.Replace(configContent, @"(?<=AuthKey = "").*?(?="")", _serverData.ServerGSLT);
+            configContent = Regex.Replace(configContent, @"(?<=MaxPlayers = ).*?(?=\n)", _serverData.ServerMaxPlayer.ToString());
+            configContent = Regex.Replace(configContent, @"(?<=Map = "").*?(?="")", _serverData.ServerMap);
+
+            // Write the updated content back to the config file
+            File.WriteAllText(configPath, configContent);
         }
 
 
         // - Start server function, return its Process to WindowsGSM
         public async Task<Process> Start()
         {
-            // Check Java exists
-            var javaPath = JavaHelper.FindJavaExecutableAbsolutePath();
-            if (javaPath.Length == 0)
-            {
-                Error = "Java is not installed";
-                return null;
-            }
-
-            // Prepare start parameter
-            var param = new StringBuilder($"{_serverData.ServerParam} -jar {StartPath} nogui");
+            // Get the working directory path
+            string workingDirectory = ServerPath.GetServersServerFiles(_serverData.ServerID);
 
             // Prepare Process
             var p = new Process
             {
-                StartInfo =
+                StartInfo = new ProcessStartInfo
                 {
-                    WorkingDirectory = ServerPath.GetServersServerFiles(_serverData.ServerID),
-                    FileName = javaPath,
-                    Arguments = param.ToString(),
+                    FileName = Path.Combine(workingDirectory, StartPath),
+                    WorkingDirectory = workingDirectory, // Set the working directory
                     WindowStyle = ProcessWindowStyle.Minimized,
-                    UseShellExecute = false
+                    UseShellExecute = false // Important for redirecting I/O if needed
                 },
                 EnableRaisingEvents = true
             };
 
-            // Set up Redirect Input and Output to WindowsGSM Console if EmbedConsole is on
-            if (AllowsEmbedConsole)
-            {
-                p.StartInfo.CreateNoWindow = true;
-                p.StartInfo.RedirectStandardInput = true;
-                p.StartInfo.RedirectStandardOutput = true;
-                p.StartInfo.RedirectStandardError = true;
-                var serverConsole = new ServerConsole(_serverData.ServerID);
-                p.OutputDataReceived += serverConsole.AddOutput;
-                p.ErrorDataReceived += serverConsole.AddOutput;
-
-                // Start Process
-                try
-                {
-                    p.Start();
-                }
-                catch (Exception e)
-                {
-                    Error = e.Message;
-                    return null; // return null if fail to start
-                }
-
-                p.BeginOutputReadLine();
-                p.BeginErrorReadLine();
-                return p;
-            }
+            UpdateServerCFG();
 
             // Start Process
             try
             {
                 p.Start();
-                return p;
             }
             catch (Exception e)
             {
                 Error = e.Message;
                 return null; // return null if fail to start
             }
+
+            return p;
         }
 
 
@@ -135,16 +144,8 @@ namespace WindowsGSM.Plugins
         {
             await Task.Run(() =>
             {
-                if (p.StartInfo.RedirectStandardInput)
-                {
-                    // Send "stop" command to StandardInput stream if EmbedConsole is on
-                    p.StandardInput.WriteLine("stop");
-                }
-                else
-                {
-                    // Send "stop" command to game server process MainWindow
-                    ServerConsole.SendMessageToMainWindow(p.MainWindowHandle, "stop");
-                }
+                // Send "stop" command to game server process MainWindow
+                ServerConsole.SendMessageToMainWindow(p.MainWindowHandle, "exit");
             });
         }
 
@@ -152,46 +153,45 @@ namespace WindowsGSM.Plugins
         // - Install server function
         public async Task<Process> Install()
         {
-            // EULA agreement
-            var agreedPrompt = await UI.CreateYesNoPromptV1("Agreement to the EULA", "By continuing you are indicating your agreement to the EULA.\n(https://account.mojang.com/documents/minecraft_eula)", "Agree", "Decline");
-            if (!agreedPrompt)
-            { 
-                Error = "Disagree to the EULA";
-                return null;
-            }
+            // Define the URL for the GitHub API release
+            string githubApiUrl = "https://api.github.com/repos/BeamMP/BeamMP-Server/releases/latest";
 
-            // Install Java if not installed
-            if (!JavaHelper.IsJREInstalled())
+            // Define the path where to save the BeamMP-Server.exe
+            string serverFilesPath = ServerPath.GetServersServerFiles(_serverData.ServerID);
+            string beammpServerPath = Path.Combine(serverFilesPath, "BeamMP-Server.exe");
+
+            // Use WebClient to fetch the latest release data from GitHub API
+            using (var webClient = new WebClient())
             {
-                var taskResult = await JavaHelper.DownloadJREToServer(_serverData.ServerID);
-                if (!taskResult.installed)
+                // Set the user-agent
+                webClient.Headers.Add("User-Agent", "WindowsGSM");
+
+                try
                 {
-                    Error = taskResult.error;
+                    // Fetch the latest release data
+                    string latestReleaseData = await webClient.DownloadStringTaskAsync(githubApiUrl);
+
+                    // Parse the fetched JSON data to get the tag name (version)
+                    JObject json = JObject.Parse(latestReleaseData);
+                    string latestVersion = json["tag_name"].ToString();
+                    string downloadUrl = "https://github.com/BeamMP/BeamMP-Server/releases/latest/download/BeamMP-Server.exe";
+
+                    // Download the server executable
+                    await webClient.DownloadFileTaskAsync(new Uri(downloadUrl), beammpServerPath);
+
+                    // Log the version to a file
+                    string logPath = Path.Combine(serverFilesPath, "version.log");
+                    File.WriteAllText(logPath, $"Current BeamMP-Server Version: {latestVersion}");
+
+                    // Call the CreateServerCFG() method to create or ensure the ServerConfig.toml is set up correctly
+                    CreateServerCFG();
+                }
+                catch (Exception e)
+                {
+                    Error = $"Failed during the installation process: {e.Message}";
                     return null;
                 }
             }
-
-            // Try getting the latest version and build
-            var build = await GetRemoteBuild(); // "1.16.1/133"
-            if (string.IsNullOrWhiteSpace(build)) { return null; }
-
-            // Download the latest paper.jar to /serverfiles
-            try
-            {
-                using (var webClient = new WebClient())
-                {
-                    await webClient.DownloadFileTaskAsync($"https://papermc.io/api/v1/paper/{build}/download", ServerPath.GetServersServerFiles(_serverData.ServerID, StartPath));
-                }
-            }
-            catch (Exception e)
-            {
-                Error = e.Message;
-                return null;
-            }
-
-            // Create eula.txt
-            var eulaFile = ServerPath.GetServersServerFiles(_serverData.ServerID, "eula.txt");
-            File.WriteAllText(eulaFile, "#By changing the setting below to TRUE you are indicating your agreement to our EULA (https://account.mojang.com/documents/minecraft_eula).\neula=true");
 
             return null;
         }
@@ -200,44 +200,46 @@ namespace WindowsGSM.Plugins
         // - Update server function
         public async Task<Process> Update()
         {
-            // Delete the old paper.jar
-            var paperJar = ServerPath.GetServersServerFiles(_serverData.ServerID, StartPath);
-            if (File.Exists(paperJar))
+            // Get the local and remote versions
+            string localVersion = GetLocalBuild();
+            string remoteVersion = await GetRemoteBuild();
+
+            // Compare the local version with the remote version
+            if (!string.IsNullOrEmpty(localVersion) && !string.IsNullOrEmpty(remoteVersion) && localVersion != remoteVersion)
             {
-                if (await Task.Run(() =>
+                // Define the path where to save the BeamMP-Server.exe
+                string serverFilesPath = ServerPath.GetServersServerFiles(_serverData.ServerID);
+                string beammpServerPath = Path.Combine(serverFilesPath, "BeamMP-Server.exe");
+
+                // Use WebClient to download the BeamMP-Server.exe
+                using (var webClient = new WebClient())
                 {
                     try
                     {
-                        File.Delete(paperJar);
-                        return true;
+                        // Download the file from the remote version URL
+                        string downloadUrl = $"https://github.com/BeamMP/BeamMP-Server/releases/latest/download/BeamMP-Server.exe";
+                        await webClient.DownloadFileTaskAsync(new Uri(downloadUrl), beammpServerPath);
+
+                        // Log the version to a file
+                        string logPath = Path.Combine(serverFilesPath, "version.log");
+                        File.WriteAllText(logPath, $"Current BeamMP-Server Version: {remoteVersion}");
                     }
                     catch (Exception e)
                     {
-                        Error = e.Message;
-                        return false;
+                        Error = $"Failed to download or update to the latest BeamMP-Server.exe: {e.Message}";
+                        return null;
                     }
-                }))
-                {
-                    return null;
                 }
-            }
 
-            // Try getting the latest version and build
-            var build = await GetRemoteBuild(); // "1.16.1/133"
-            if (string.IsNullOrWhiteSpace(build)) { return null; }
-
-            // Download the latest paper.jar to /serverfiles
-            try
-            {
-                using (var webClient = new WebClient())
-                {
-                    await webClient.DownloadFileTaskAsync($"https://papermc.io/api/v1/paper/{build}/download", ServerPath.GetServersServerFiles(_serverData.ServerID, StartPath));
-                }
+                Notice = "Server updated successfully.";
             }
-            catch (Exception e)
+            else if (localVersion == remoteVersion)
             {
-                Error = e.Message;
-                return null;
+                Notice = "No update needed. The server is up-to-date.";
+            }
+            else
+            {
+                Error = "Failed to get local or remote version for update comparison.";
             }
 
             return null;
@@ -247,60 +249,104 @@ namespace WindowsGSM.Plugins
         // - Check if the installation is successful
         public bool IsInstallValid()
         {
-            // Check paper.jar exists
-            return File.Exists(ServerPath.GetServersServerFiles(_serverData.ServerID, StartPath));
+            // Get the paths to the server executable and the configuration file
+            string serverExePath = ServerPath.GetServersServerFiles(_serverData.ServerID, "BeamMP-Server.exe");
+            string serverConfigPath = ServerPath.GetServersServerFiles(_serverData.ServerID, "ServerConfig.toml");
+
+            // Check if both the executable and the config file exist
+            bool exeExists = File.Exists(serverExePath);
+            bool configExists = File.Exists(serverConfigPath);
+
+            // If both exist, return true, indicating a valid installation
+            return exeExists && configExists;
         }
 
 
-        // - Check if the directory contains paper.jar for import
+        // - Check if the directory contains BeamMP-Server.exe and ServerConfig.toml for import
         public bool IsImportValid(string path)
         {
-            // Check paper.jar exists
-            var exePath = Path.Combine(path, StartPath);
-            Error = $"Invalid Path! Fail to find {StartPath}";
-            return File.Exists(exePath);
+            // Define the expected file names
+            string serverExe = "BeamMP-Server.exe";
+            string serverConfig = "ServerConfig.toml";
+
+            // Build the full paths to the expected files
+            string serverExePath = Path.Combine(path, serverExe);
+            string serverConfigPath = Path.Combine(path, serverConfig);
+
+            // Check if both the executable and the config file exist at the given path
+            bool exeExists = File.Exists(serverExePath);
+            bool configExists = File.Exists(serverConfigPath);
+
+            // Set the error message if one of the files doesn't exist
+            if (!exeExists || !configExists)
+            {
+                Error = $"Invalid Path! Fail to find {(exeExists ? serverConfig : serverExe)}";
+            }
+
+            // Return true if both files exist, indicating a valid import
+            return exeExists && configExists;
         }
 
 
-        // - Get Local server version
         public string GetLocalBuild()
         {
-            // Get local version and build by version_history.json
-            const string VERSION_JSON_FILE = "version_history.json";
-            var versionJsonFile = ServerPath.GetServersServerFiles(_serverData.ServerID, VERSION_JSON_FILE);
-            if (!File.Exists(versionJsonFile))
+            // Define the path to the version log file
+            string logPath = Path.Combine(ServerPath.GetServersServerFiles(_serverData.ServerID), "version.log");
+
+            // Check if the version log file exists
+            if (File.Exists(logPath))
             {
-                Error = $"{VERSION_JSON_FILE} does not exist";
-                return string.Empty;
+                // Read the version from the file
+                try
+                {
+                    string versionLogContents = File.ReadAllText(logPath);
+                    string version = versionLogContents.Replace("Current BeamMP-Server Version: ", "").Trim();
+                    return version;
+                }
+                catch (Exception e)
+                {
+                    Error = $"Failed to read local version: {e.Message}";
+                    return "";
+                }
             }
-
-            var json = File.ReadAllText(versionJsonFile);
-            var text = JObject.Parse(json)["currentVersion"].ToString(); // "git-Paper-131 (MC: 1.16.1)"
-            var match = new Regex(@"git-Paper-(\d{1,}) \(MC: (.{1,})\)").Match(text);
-            var build = match.Groups[1].Value; // "131"
-            var version = match.Groups[2].Value; // "1.16.1"
-
-            return $"{version}/{build}";
+            else
+            {
+                Error = "Local version file does not exist";
+                return "";
+            }
         }
 
 
-        // - Get Latest server version
         public async Task<string> GetRemoteBuild()
         {
-            // Get latest version and build at https://papermc.io/api/v1/paper
-            try
+            // Define the URL for the GitHub API release
+            string githubApiUrl = "https://api.github.com/repos/BeamMP/BeamMP-Server/releases/latest";
+
+            // Define the user-agent string, as GitHub requires it for API requests
+            string userAgent = "WindowsGSM";
+
+            // Use WebClient to fetch the latest release data from GitHub API
+            using (var webClient = new WebClient())
             {
-                using (var webClient = new WebClient())
+                // Set the user-agent
+                webClient.Headers.Add("User-Agent", userAgent);
+
+                try
                 {
-                    var version = JObject.Parse(await webClient.DownloadStringTaskAsync("https://papermc.io/api/v1/paper"))["versions"][0].ToString(); // "1.16.1"
-                    var build = JObject.Parse(await webClient.DownloadStringTaskAsync($"https://papermc.io/api/v1/paper/{version}"))["builds"]["latest"].ToString(); // "133"
-                    return $"{version}/{build}";
+                    // Fetch the latest release data
+                    string latestReleaseData = await webClient.DownloadStringTaskAsync(githubApiUrl);
+
+                    // Parse the fetched JSON data to get the tag name (version)
+                    JObject json = JObject.Parse(latestReleaseData);
+                    string latestVersion = json["tag_name"].ToString();
+
+                    return latestVersion;
                 }
-            }
-            catch
-            {
-                Error = "Fail to get remote version and build";
-                return string.Empty;
+                catch (Exception e)
+                {
+                    Error = $"Failed to get remote version: {e.Message}";
+                    return "";
+                }
             }
         }
     }
